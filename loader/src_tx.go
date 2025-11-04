@@ -24,6 +24,9 @@ type SrcTx struct {
 	SrcNonce          int32
 	ThirdpartyChannel int32
 	ToExchange        int32
+	IsAcross          int32
+	AcrossStatus      string
+	AcrossDepositId   int64
 }
 
 type SrcTxManager struct {
