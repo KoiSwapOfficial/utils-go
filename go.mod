@@ -19,6 +19,7 @@ require (
 	github.com/gagliardetto/solana-go v1.10.0
 	github.com/gagliardetto/treeout v0.1.4
 	github.com/go-lark/lark v1.15.0
+	github.com/go-sql-driver/mysql v1.7.1
 	github.com/hashicorp/go-metrics v0.5.3
 	github.com/machinebox/graphql v0.2.2
 	github.com/mitchellh/mapstructure v1.5.0
