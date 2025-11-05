@@ -316,6 +316,46 @@ func (mgr *AcrossManager) GetRouteByID(id int64) (*AcrossRoute, bool) {
     return r, ok
 }
 
+// GetUniqueRouteByChainsAndTokens finds a single route by chain pair and token pair (addresses).
+// Inputs must specify: originChainId, destinationChainId, originToken, destinationToken.
+// Returns the unique matching route from in-memory cache; returns error if none or multiple found.
+func (mgr *AcrossManager) GetUniqueRouteByChainsAndTokens(originChainId, destinationChainId int64, originToken, destinationToken string) (*AcrossRoute, error) {
+    oTok := strings.ToLower(strings.TrimSpace(originToken))
+    dTok := strings.ToLower(strings.TrimSpace(destinationToken))
+
+    // Narrow to the chain pair first
+    mgr.mutex.RLock()
+    destMap, ok := mgr.originToDestRoutes[originChainId]
+    if !ok {
+        mgr.mutex.RUnlock()
+        return nil, fmt.Errorf("no routes for originChainId %d", originChainId)
+    }
+    routes, ok := destMap[destinationChainId]
+    mgr.mutex.RUnlock()
+    if !ok || len(routes) == 0 {
+        return nil, fmt.Errorf("no routes for destChainId %d", destinationChainId)
+    }
+
+    var match *AcrossRoute
+    for _, r := range routes {
+        if r == nil {
+            continue
+        }
+        roTok := strings.ToLower(strings.TrimSpace(r.OriginToken))
+        rdTok := strings.ToLower(strings.TrimSpace(r.DestinationToken))
+        if roTok == oTok && rdTok == dTok {
+            if match != nil {
+                return nil, fmt.Errorf("multiple routes found for originChainId=%d destinationChainId=%d originToken=%s destinationToken=%s", originChainId, destinationChainId, originToken, destinationToken)
+            }
+            match = r
+        }
+    }
+    if match == nil {
+        return nil, fmt.Errorf("no matching route for originChainId=%d destinationChainId=%d originToken=%s destinationToken=%s", originChainId, destinationChainId, originToken, destinationToken)
+    }
+    return match, nil
+}
+
 // Validate route supports amount in [min, max]
 func (mgr *AcrossManager) ValidateRoute(route *AcrossRoute, amount *big.Int) error {
     if route == nil {
