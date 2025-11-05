@@ -341,6 +341,88 @@ func (mgr *AcrossManager) ValidateRoute(route *AcrossRoute, amount *big.Int) err
     return nil
 }
 
+// HasAcrossRoute checks cached routes for a chain pair and token symbol.
+// amountUi is the raw amount string (base units, no decimals scaling).
+// If provided, it will be validated against route min/max directly.
+// Returns 1 if a matching route exists (and amount fits when provided), otherwise 0.
+func (mgr *AcrossManager) HasAcrossRoute(fromChainId, toChainId int64, amountUi string, tokenSymbol string) (int32, error) {
+    routes, err := mgr.GetRoutesByChains(fromChainId, toChainId)
+    if err != nil || len(routes) == 0 {
+        return 0, nil
+    }
+
+    sym := strings.ToLower(strings.TrimSpace(tokenSymbol))
+    amountUi = strings.TrimSpace(amountUi)
+
+    if amountUi == "" {
+        return 0, nil
+    }
+
+    // Parse UI amount as decimal (supports "1.1"), no decimals scaling
+    var amtRat *big.Rat
+    if amountUi != "" {
+        v := new(big.Rat)
+        if _, ok := v.SetString(amountUi); !ok {
+            return 0, fmt.Errorf("invalid amount: %s", amountUi)
+        }
+        // Non-positive amounts are invalid
+        if v.Sign() <= 0 {
+            return 0, fmt.Errorf("invalid amount: %s", amountUi)
+        }
+        amtRat = v
+    }
+
+    for _, r := range routes {
+        if r == nil {
+            continue
+        }
+        oSym := strings.ToLower(strings.TrimSpace(r.OriginTokenSymbol))
+        dSym := strings.ToLower(strings.TrimSpace(r.DestinationTokenSymbol))
+
+        // Match by symbol on either side
+        if sym != "" && !(oSym == sym || dSym == sym) {
+            continue
+        }
+
+        // If amount provided, ensure it fits within route constraints using decimal comparison
+        if amtRat != nil {
+            minStr := strings.TrimSpace(r.MinAmount)
+            maxStr := strings.TrimSpace(r.MaxAmount)
+
+            // Parse min
+            minRat := new(big.Rat)
+            if minStr == "" {
+                minRat.SetInt64(0)
+            } else if _, ok := minRat.SetString(minStr); !ok {
+                // Invalid min; skip this route
+                continue
+            }
+
+            // Parse max ("0" or empty means unlimited)
+            maxRat := new(big.Rat)
+            unlimited := maxStr == "" || strings.EqualFold(maxStr, "0")
+            if !unlimited {
+                if _, ok := maxRat.SetString(maxStr); !ok {
+                    // Invalid max; skip this route
+                    continue
+                }
+            }
+
+            // amt >= min
+            if amtRat.Cmp(minRat) < 0 {
+                continue
+            }
+            // and amt <= max (when limited)
+            if !unlimited && amtRat.Cmp(maxRat) > 0 {
+                continue
+            }
+        }
+
+        return 1, nil
+    }
+    return 0, nil
+}
+
 // InvalidateCache clears in-memory indexes (does not touch DB)
 func (mgr *AcrossManager) InvalidateCache() {
     mgr.mutex.Lock()
