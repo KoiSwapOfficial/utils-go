@@ -1,15 +1,17 @@
 package loader
 
 import (
-	"database/sql"
-	"encoding/json"
-	"fmt"
-	"io"
-	"math/big"
-	"net/http"
-	"strings"
-	"sync"
-	"time"
+    "bytes"
+    "database/sql"
+    "encoding/json"
+    "fmt"
+    "io"
+    "math/big"
+    "net/http"
+    "net/url"
+    "strings"
+    "sync"
+    "time"
 
 	"github.com/owlto-dao/utils-go/alert"
 )
@@ -425,4 +427,125 @@ func (mgr *AcrossManager) GetSupportedTokens(chainId int64) []string {
     }
     mgr.mutex.RUnlock()
     return res
+}
+
+// ---- Swap Approval (Across) ----
+// Minimal request/response models to query total fees from Across swap approval API.
+type approvalActionArg struct {
+    Value               string `json:"value"`
+    PopulateDynamically bool   `json:"populateDynamically,omitempty"`
+    BalanceSourceToken  string `json:"balanceSourceToken,omitempty"`
+}
+
+type approvalAction struct {
+    Target            string              `json:"target"`
+    FunctionSignature string              `json:"functionSignature"`
+    Args              []approvalActionArg `json:"args"`
+    Value             string              `json:"value"`
+    IsNativeTransfer  bool                `json:"isNativeTransfer"`
+}
+
+type swapApprovalRequest struct {
+    Actions []approvalAction `json:"actions"`
+}
+
+type swapApprovalResponse struct {
+    Fees struct {
+        Total struct {
+            Amount    string `json:"amount"`
+            AmountUsd string `json:"amountUsd"`
+            Pct       string `json:"pct"`
+            Token     struct {
+                Decimals int32  `json:"decimals"`
+                Symbol   string `json:"symbol"`
+                Address  string `json:"address"`
+                Name     string `json:"name"`
+                ChainId  int64  `json:"chainId"`
+            } `json:"token"`
+        } `json:"total"`
+    } `json:"fees"`
+}
+
+// ApprovalTotalFee returns the subset of fields requested by the user from fees.total
+type ApprovalTotalFee struct {
+    Amount       string
+    TokenSymbol  string
+    TokenAddress string
+    TokenName    string
+    TokenChainId int64
+}
+
+// GetSwapApprovalTotalFee calls Across swap approval API and returns fees.total fields.
+// Parameters:
+//  - amount: input amount as string (in smallest unit of inputToken)
+//  - inputToken: token address on origin chain
+//  - outputToken: token address on destination chain
+//  - originChainId, destinationChainId: chain IDs
+//  - depositor: recipient address for the transfer action
+func (mgr *AcrossManager) GetSwapApprovalTotalFee(amount string, inputToken string, outputToken string, originChainId, destinationChainId int64, depositor string) (*ApprovalTotalFee, error) {
+    base := "https://app.across.to/api/swap/approval"
+    q := url.Values{}
+    q.Set("tradeType", "exactInput")
+    q.Set("amount", strings.TrimSpace(amount))
+    q.Set("inputToken", strings.TrimSpace(inputToken))
+    q.Set("outputToken", strings.TrimSpace(outputToken))
+    q.Set("originChainId", fmt.Sprintf("%d", originChainId))
+    q.Set("destinationChainId", fmt.Sprintf("%d", destinationChainId))
+    q.Set("depositor", strings.TrimSpace(depositor))
+
+    // Build minimal actions payload as shown in spec
+    reqBody := swapApprovalRequest{
+        Actions: []approvalAction{
+            {
+                Target:            strings.TrimSpace(inputToken),
+                FunctionSignature: "function transfer(address to, uint256 value)",
+                Args: []approvalActionArg{
+                    {Value: strings.TrimSpace(depositor), PopulateDynamically: false},
+                    {Value: "0", PopulateDynamically: true, BalanceSourceToken: strings.TrimSpace(inputToken)},
+                },
+                Value:            "0",
+                IsNativeTransfer: false,
+            },
+        },
+    }
+    payload, err := json.Marshal(reqBody)
+    if err != nil {
+        return nil, fmt.Errorf("marshal approval request error: %w", err)
+    }
+
+    u := base + "?" + q.Encode()
+    req, err := http.NewRequest("POST", u, bytes.NewReader(payload))
+    if err != nil {
+        return nil, fmt.Errorf("new request error: %w", err)
+    }
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("Accept", "*/*")
+
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+        return nil, fmt.Errorf("approval request error: %w", err)
+    }
+    defer resp.Body.Close()
+    if resp.StatusCode != http.StatusOK {
+        b, _ := io.ReadAll(resp.Body)
+        return nil, fmt.Errorf("approval request status %d: %s", resp.StatusCode, strings.TrimSpace(string(b)))
+    }
+
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return nil, fmt.Errorf("read approval response error: %w", err)
+    }
+    var r swapApprovalResponse
+    if err := json.Unmarshal(body, &r); err != nil {
+        return nil, fmt.Errorf("unmarshal approval response error: %w", err)
+    }
+
+    res := &ApprovalTotalFee{
+        Amount:       strings.TrimSpace(r.Fees.Total.Amount),
+        TokenSymbol:  strings.TrimSpace(r.Fees.Total.Token.Symbol),
+        TokenAddress: strings.TrimSpace(r.Fees.Total.Token.Address),
+        TokenName:    strings.TrimSpace(r.Fees.Total.Token.Name),
+        TokenChainId: r.Fees.Total.Token.ChainId,
+    }
+    return res, nil
 }
