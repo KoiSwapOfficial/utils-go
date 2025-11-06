@@ -1,19 +1,18 @@
 package loader
 
 import (
-	"bytes"
-	"database/sql"
-	"encoding/json"
-	"fmt"
-	"io"
-	"math/big"
-	"net/http"
-	"net/url"
-	"strings"
-	"sync"
-	"time"
+    "database/sql"
+    "encoding/json"
+    "fmt"
+    "io"
+    "math/big"
+    "net/http"
+    "net/url"
+    "strings"
+    "sync"
+    "time"
 
-	"github.com/owlto-dao/utils-go/alert"
+    "github.com/owlto-dao/utils-go/alert"
 )
 
 type AcrossRoute struct {
@@ -607,43 +606,22 @@ type swapApprovalResponse struct {
 // Returns:
 //   - amount string (fees.total.amount)
 func (mgr *AcrossManager) GetSwapApprovalTotalFee(amount string, inputToken string, outputToken string, originChainId, destinationChainId int64, depositor string) (string, error) {
-	base := "https://app.across.to/api/swap/approval"
-	q := url.Values{}
-	q.Set("tradeType", "exactInput")
-	q.Set("amount", strings.TrimSpace(amount))
-	q.Set("inputToken", strings.TrimSpace(inputToken))
-	q.Set("outputToken", strings.TrimSpace(outputToken))
-	q.Set("originChainId", fmt.Sprintf("%d", originChainId))
-	q.Set("destinationChainId", fmt.Sprintf("%d", destinationChainId))
-	q.Set("depositor", strings.TrimSpace(depositor))
+    base := "https://app.across.to/api/swap/approval"
+    q := url.Values{}
+    q.Set("tradeType", "exactInput")
+    q.Set("amount", strings.TrimSpace(amount))
+    q.Set("inputToken", strings.TrimSpace(inputToken))
+    q.Set("outputToken", strings.TrimSpace(outputToken))
+    q.Set("originChainId", fmt.Sprintf("%d", originChainId))
+    q.Set("destinationChainId", fmt.Sprintf("%d", destinationChainId))
+    q.Set("depositor", strings.TrimSpace(depositor))
 
-	// Build minimal actions payload as shown in spec
-	reqBody := swapApprovalRequest{
-		Actions: []approvalAction{
-			{
-				Target:            strings.TrimSpace(inputToken),
-				FunctionSignature: "function transfer(address to, uint256 value)",
-				Args: []approvalActionArg{
-					{Value: strings.TrimSpace(depositor), PopulateDynamically: false},
-					{Value: "0", PopulateDynamically: true, BalanceSourceToken: strings.TrimSpace(inputToken)},
-				},
-				Value:            "0",
-				IsNativeTransfer: false,
-			},
-		},
-	}
-	payload, err := json.Marshal(reqBody)
-	if err != nil {
-		return "", fmt.Errorf("marshal approval request error: %w", err)
-	}
-
-	u := base + "?" + q.Encode()
-	req, err := http.NewRequest("GET", u, bytes.NewReader(payload))
-	if err != nil {
-		return "", fmt.Errorf("new request error: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "*/*")
+    u := base + "?" + q.Encode()
+    req, err := http.NewRequest("GET", u, nil)
+    if err != nil {
+        return "", fmt.Errorf("new request error: %w", err)
+    }
+    req.Header.Set("Accept", "*/*")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
