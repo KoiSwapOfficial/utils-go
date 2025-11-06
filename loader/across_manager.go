@@ -1,63 +1,63 @@
 package loader
 
 import (
-    "bytes"
-    "database/sql"
-    "encoding/json"
-    "fmt"
-    "io"
-    "math/big"
-    "net/http"
-    "net/url"
-    "strings"
-    "sync"
-    "time"
+	"bytes"
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"io"
+	"math/big"
+	"net/http"
+	"net/url"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/owlto-dao/utils-go/alert"
 )
 
 type AcrossRoute struct {
-    ID                     int64  `json:"id"`
-    OriginChainId          int64  `json:"originChainId"`
-    OriginToken            string `json:"originToken"`
-    DestinationChainId     int64  `json:"destinationChainId"`
-    DestinationToken       string `json:"destinationToken"`
-    OriginTokenSymbol      string `json:"originTokenSymbol"`
-    DestinationTokenSymbol string `json:"destinationTokenSymbol"`
-    IsNative               bool   `json:"isNative"`
-    MinAmount              string `json:"minAmount"`
-    MaxAmount              string `json:"maxAmount"`
-    FeeRate                string `json:"feeRate"`
-    IsActive               bool   `json:"isActive"`
+	ID                     int64  `json:"id"`
+	OriginChainId          int64  `json:"originChainId"`
+	OriginToken            string `json:"originToken"`
+	DestinationChainId     int64  `json:"destinationChainId"`
+	DestinationToken       string `json:"destinationToken"`
+	OriginTokenSymbol      string `json:"originTokenSymbol"`
+	DestinationTokenSymbol string `json:"destinationTokenSymbol"`
+	IsNative               bool   `json:"isNative"`
+	MinAmount              string `json:"minAmount"`
+	MaxAmount              string `json:"maxAmount"`
+	FeeRate                string `json:"feeRate"`
+	IsActive               bool   `json:"isActive"`
 }
 
 type AcrossManager struct {
-    originToDestRoutes     map[int64]map[int64][]*AcrossRoute
-    tokenPairRoutes        map[string]map[string][]*AcrossRoute
-    chainTokenRoutes       map[int64]map[string][]*AcrossRoute
-    symbolPairRoutes       map[string]map[string][]*AcrossRoute
-    routeById              map[int64]*AcrossRoute
-    db                     *sql.DB
-    alerter                alert.Alerter
-    mutex                  *sync.RWMutex
-    defaultFeeRate         string
-    routeRefreshInterval   time.Duration
-    stopCh                 chan struct{}
+	originToDestRoutes   map[int64]map[int64][]*AcrossRoute
+	tokenPairRoutes      map[string]map[string][]*AcrossRoute
+	chainTokenRoutes     map[int64]map[string][]*AcrossRoute
+	symbolPairRoutes     map[string]map[string][]*AcrossRoute
+	routeById            map[int64]*AcrossRoute
+	db                   *sql.DB
+	alerter              alert.Alerter
+	mutex                *sync.RWMutex
+	defaultFeeRate       string
+	routeRefreshInterval time.Duration
+	stopCh               chan struct{}
 }
 
 func NewAcrossManager(db *sql.DB, alerter alert.Alerter) *AcrossManager {
-    return &AcrossManager{
-        originToDestRoutes:   make(map[int64]map[int64][]*AcrossRoute),
-        tokenPairRoutes:      make(map[string]map[string][]*AcrossRoute),
-        chainTokenRoutes:     make(map[int64]map[string][]*AcrossRoute),
-        symbolPairRoutes:     make(map[string]map[string][]*AcrossRoute),
-        routeById:            make(map[int64]*AcrossRoute),
-        db:                   db,
-        alerter:              alerter,
-        mutex:                new(sync.RWMutex),
-        defaultFeeRate:       "0",
-        routeRefreshInterval: 24 * time.Hour,
-    }
+	return &AcrossManager{
+		originToDestRoutes:   make(map[int64]map[int64][]*AcrossRoute),
+		tokenPairRoutes:      make(map[string]map[string][]*AcrossRoute),
+		chainTokenRoutes:     make(map[int64]map[string][]*AcrossRoute),
+		symbolPairRoutes:     make(map[string]map[string][]*AcrossRoute),
+		routeById:            make(map[int64]*AcrossRoute),
+		db:                   db,
+		alerter:              alerter,
+		mutex:                new(sync.RWMutex),
+		defaultFeeRate:       "0",
+		routeRefreshInterval: 24 * time.Hour,
+	}
 }
 
 func (mgr *AcrossManager) FetchRoutesFromAPI() ([]*AcrossRoute, error) {
@@ -85,46 +85,46 @@ func (mgr *AcrossManager) FetchRoutesFromAPI() ([]*AcrossRoute, error) {
 }
 
 func (mgr *AcrossManager) SyncRoutesWithDB() error {
-    routes, err := mgr.FetchRoutesFromAPI()
-    if err != nil {
-        return fmt.Errorf("failed to fetch routes for DB sync: %w", err)
-    }
+	routes, err := mgr.FetchRoutesFromAPI()
+	if err != nil {
+		return fmt.Errorf("failed to fetch routes for DB sync: %w", err)
+	}
 
-    tx, err := mgr.db.Begin()
-    if err != nil {
-        return fmt.Errorf("failed to begin transaction: %w", err)
-    }
+	tx, err := mgr.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
 
-    const chunkSize = 200
-    for i := 0; i < len(routes); i += chunkSize {
-        end := i + chunkSize
-        if end > len(routes) {
-            end = len(routes)
-        }
-        chunk := routes[i:end]
+	const chunkSize = 200
+	for i := 0; i < len(routes); i += chunkSize {
+		end := i + chunkSize
+		if end > len(routes) {
+			end = len(routes)
+		}
+		chunk := routes[i:end]
 
-        var sb strings.Builder
-        sb.WriteString(`INSERT INTO t_across_routes (
+		var sb strings.Builder
+		sb.WriteString(`INSERT INTO t_across_routes (
                 origin_chain_id, origin_token, destination_chain_id, destination_token,
                 origin_token_symbol, destination_token_symbol, is_native,
                 min_amount, max_amount, fee_rate, is_active,
                 created_at, updated_at
             ) VALUES `)
 
-        args := make([]any, 0, len(chunk)*11)
-        for idx, route := range chunk {
-            if idx > 0 {
-                sb.WriteString(",")
-            }
-            sb.WriteString("(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())")
-            args = append(args,
-                route.OriginChainId, route.OriginToken, route.DestinationChainId, route.DestinationToken,
-                route.OriginTokenSymbol, route.DestinationTokenSymbol, route.IsNative,
-                route.MinAmount, route.MaxAmount, route.FeeRate, route.IsActive,
-            )
-        }
+		args := make([]any, 0, len(chunk)*11)
+		for idx, route := range chunk {
+			if idx > 0 {
+				sb.WriteString(",")
+			}
+			sb.WriteString("(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())")
+			args = append(args,
+				route.OriginChainId, route.OriginToken, route.DestinationChainId, route.DestinationToken,
+				route.OriginTokenSymbol, route.DestinationTokenSymbol, route.IsNative,
+				route.MinAmount, route.MaxAmount, route.FeeRate, route.IsActive,
+			)
+		}
 
-        sb.WriteString(` ON DUPLICATE KEY UPDATE
+		sb.WriteString(` ON DUPLICATE KEY UPDATE
                 origin_token_symbol = VALUES(origin_token_symbol),
                 destination_token_symbol = VALUES(destination_token_symbol),
                 is_native = VALUES(is_native),
@@ -134,101 +134,101 @@ func (mgr *AcrossManager) SyncRoutesWithDB() error {
                 is_active = VALUES(is_active),
                 updated_at = NOW();`)
 
-        if _, err := tx.Exec(sb.String(), args...); err != nil {
-            tx.Rollback()
-            return fmt.Errorf("failed to upsert routes chunk [%d:%d]: %w", i, end, err)
-        }
-    }
+		if _, err := tx.Exec(sb.String(), args...); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to upsert routes chunk [%d:%d]: %w", i, end, err)
+		}
+	}
 
-    return tx.Commit()
+	return tx.Commit()
 }
 
 // LoadAllRoutes queries active routes from DB and rebuilds in-memory indexes atomically.
 func (mgr *AcrossManager) LoadAllRoutes() error {
-    rows, err := mgr.db.Query(`SELECT id, origin_chain_id, origin_token, destination_chain_id, destination_token,
+	rows, err := mgr.db.Query(`SELECT id, origin_chain_id, origin_token, destination_chain_id, destination_token,
         origin_token_symbol, destination_token_symbol, is_native, min_amount, max_amount, fee_rate, is_active
         FROM t_across_routes`)
-    if err != nil {
-        return fmt.Errorf("query t_across_routes error: %w", err)
-    }
-    if rows == nil {
-        return fmt.Errorf("query t_across_routes returned nil rows")
-    }
-    defer rows.Close()
+	if err != nil {
+		return fmt.Errorf("query t_across_routes error: %w", err)
+	}
+	if rows == nil {
+		return fmt.Errorf("query t_across_routes returned nil rows")
+	}
+	defer rows.Close()
 
-    newOriginToDest := make(map[int64]map[int64][]*AcrossRoute)
-    newTokenPair := make(map[string]map[string][]*AcrossRoute)
-    newChainToken := make(map[int64]map[string][]*AcrossRoute)
-    newSymbolPair := make(map[string]map[string][]*AcrossRoute)
-    newByID := make(map[int64]*AcrossRoute)
+	newOriginToDest := make(map[int64]map[int64][]*AcrossRoute)
+	newTokenPair := make(map[string]map[string][]*AcrossRoute)
+	newChainToken := make(map[int64]map[string][]*AcrossRoute)
+	newSymbolPair := make(map[string]map[string][]*AcrossRoute)
+	newByID := make(map[int64]*AcrossRoute)
 
-    for rows.Next() {
-        var r AcrossRoute
-        if err := rows.Scan(
-            &r.ID,
-            &r.OriginChainId,
-            &r.OriginToken,
-            &r.DestinationChainId,
-            &r.DestinationToken,
-            &r.OriginTokenSymbol,
-            &r.DestinationTokenSymbol,
-            &r.IsNative,
-            &r.MinAmount,
-            &r.MaxAmount,
-            &r.FeeRate,
-            &r.IsActive,
-        ); err != nil {
-            mgr.alerter.AlertText("scan t_across_routes row error", err)
-            continue
-        }
+	for rows.Next() {
+		var r AcrossRoute
+		if err := rows.Scan(
+			&r.ID,
+			&r.OriginChainId,
+			&r.OriginToken,
+			&r.DestinationChainId,
+			&r.DestinationToken,
+			&r.OriginTokenSymbol,
+			&r.DestinationTokenSymbol,
+			&r.IsNative,
+			&r.MinAmount,
+			&r.MaxAmount,
+			&r.FeeRate,
+			&r.IsActive,
+		); err != nil {
+			mgr.alerter.AlertText("scan t_across_routes row error", err)
+			continue
+		}
 
-        // Normalize strings for indexing keys
-        oTok := strings.ToLower(strings.TrimSpace(r.OriginToken))
-        dTok := strings.ToLower(strings.TrimSpace(r.DestinationToken))
-        oSym := strings.ToLower(strings.TrimSpace(r.OriginTokenSymbol))
-        dSym := strings.ToLower(strings.TrimSpace(r.DestinationTokenSymbol))
+		// Normalize strings for indexing keys
+		oTok := strings.ToLower(strings.TrimSpace(r.OriginToken))
+		dTok := strings.ToLower(strings.TrimSpace(r.DestinationToken))
+		oSym := strings.ToLower(strings.TrimSpace(r.OriginTokenSymbol))
+		dSym := strings.ToLower(strings.TrimSpace(r.DestinationTokenSymbol))
 
-        // origin -> dest index
-        if _, ok := newOriginToDest[r.OriginChainId]; !ok {
-            newOriginToDest[r.OriginChainId] = make(map[int64][]*AcrossRoute)
-        }
-        newOriginToDest[r.OriginChainId][r.DestinationChainId] = append(newOriginToDest[r.OriginChainId][r.DestinationChainId], &r)
+		// origin -> dest index
+		if _, ok := newOriginToDest[r.OriginChainId]; !ok {
+			newOriginToDest[r.OriginChainId] = make(map[int64][]*AcrossRoute)
+		}
+		newOriginToDest[r.OriginChainId][r.DestinationChainId] = append(newOriginToDest[r.OriginChainId][r.DestinationChainId], &r)
 
-        // token pair index
-        if _, ok := newTokenPair[oTok]; !ok {
-            newTokenPair[oTok] = make(map[string][]*AcrossRoute)
-        }
-        newTokenPair[oTok][dTok] = append(newTokenPair[oTok][dTok], &r)
+		// token pair index
+		if _, ok := newTokenPair[oTok]; !ok {
+			newTokenPair[oTok] = make(map[string][]*AcrossRoute)
+		}
+		newTokenPair[oTok][dTok] = append(newTokenPair[oTok][dTok], &r)
 
-        // chain token index
-        if _, ok := newChainToken[r.OriginChainId]; !ok {
-            newChainToken[r.OriginChainId] = make(map[string][]*AcrossRoute)
-        }
-        newChainToken[r.OriginChainId][oTok] = append(newChainToken[r.OriginChainId][oTok], &r)
+		// chain token index
+		if _, ok := newChainToken[r.OriginChainId]; !ok {
+			newChainToken[r.OriginChainId] = make(map[string][]*AcrossRoute)
+		}
+		newChainToken[r.OriginChainId][oTok] = append(newChainToken[r.OriginChainId][oTok], &r)
 
-        // symbol pair index
-        if _, ok := newSymbolPair[oSym]; !ok {
-            newSymbolPair[oSym] = make(map[string][]*AcrossRoute)
-        }
-        newSymbolPair[oSym][dSym] = append(newSymbolPair[oSym][dSym], &r)
+		// symbol pair index
+		if _, ok := newSymbolPair[oSym]; !ok {
+			newSymbolPair[oSym] = make(map[string][]*AcrossRoute)
+		}
+		newSymbolPair[oSym][dSym] = append(newSymbolPair[oSym][dSym], &r)
 
-        // id index
-        newByID[r.ID] = &r
-    }
-    if err := rows.Err(); err != nil {
-        mgr.alerter.AlertText("iterate t_across_routes error", err)
-    }
+		// id index
+		newByID[r.ID] = &r
+	}
+	if err := rows.Err(); err != nil {
+		mgr.alerter.AlertText("iterate t_across_routes error", err)
+	}
 
-    // Swap caches atomically
-    mgr.mutex.Lock()
-    mgr.originToDestRoutes = newOriginToDest
-    mgr.tokenPairRoutes = newTokenPair
-    mgr.chainTokenRoutes = newChainToken
-    mgr.symbolPairRoutes = newSymbolPair
-    mgr.routeById = newByID
-    mgr.mutex.Unlock()
+	// Swap caches atomically
+	mgr.mutex.Lock()
+	mgr.originToDestRoutes = newOriginToDest
+	mgr.tokenPairRoutes = newTokenPair
+	mgr.chainTokenRoutes = newChainToken
+	mgr.symbolPairRoutes = newSymbolPair
+	mgr.routeById = newByID
+	mgr.mutex.Unlock()
 
-    return nil
+	return nil
 }
 
 // LoadRoutes is an alias for LoadAllRoutes for compatibility.
@@ -236,149 +236,149 @@ func (mgr *AcrossManager) LoadRoutes() error { return mgr.LoadAllRoutes() }
 
 // Query by chain pair
 func (mgr *AcrossManager) GetRoutesByChains(originChainId, destChainId int64) ([]*AcrossRoute, error) {
-    mgr.mutex.RLock()
-    destMap, ok := mgr.originToDestRoutes[originChainId]
-    if !ok {
-        mgr.mutex.RUnlock()
-        return nil, fmt.Errorf("no routes for originChainId %d", originChainId)
-    }
-    routes, ok := destMap[destChainId]
-    mgr.mutex.RUnlock()
-    if !ok || len(routes) == 0 {
-        return nil, fmt.Errorf("no routes for destChainId %d", destChainId)
-    }
-    return routes, nil
+	mgr.mutex.RLock()
+	destMap, ok := mgr.originToDestRoutes[originChainId]
+	if !ok {
+		mgr.mutex.RUnlock()
+		return nil, fmt.Errorf("no routes for originChainId %d", originChainId)
+	}
+	routes, ok := destMap[destChainId]
+	mgr.mutex.RUnlock()
+	if !ok || len(routes) == 0 {
+		return nil, fmt.Errorf("no routes for destChainId %d", destChainId)
+	}
+	return routes, nil
 }
 
 // Compatibility alias
 func (mgr *AcrossManager) GetRoutesByOriginAndDest(originChainId, destChainId int64) ([]*AcrossRoute, error) {
-    return mgr.GetRoutesByChains(originChainId, destChainId)
+	return mgr.GetRoutesByChains(originChainId, destChainId)
 }
 
 // Query by token pair (addresses)
 func (mgr *AcrossManager) GetRoutesByTokenPair(originToken, destToken string) ([]*AcrossRoute, error) {
-    oTok := strings.ToLower(strings.TrimSpace(originToken))
-    dTok := strings.ToLower(strings.TrimSpace(destToken))
-    mgr.mutex.RLock()
-    destMap, ok := mgr.tokenPairRoutes[oTok]
-    if !ok {
-        mgr.mutex.RUnlock()
-        return nil, fmt.Errorf("no routes for originToken %s", originToken)
-    }
-    routes, ok := destMap[dTok]
-    mgr.mutex.RUnlock()
-    if !ok || len(routes) == 0 {
-        return nil, fmt.Errorf("no routes for destToken %s", destToken)
-    }
-    return routes, nil
+	oTok := strings.ToLower(strings.TrimSpace(originToken))
+	dTok := strings.ToLower(strings.TrimSpace(destToken))
+	mgr.mutex.RLock()
+	destMap, ok := mgr.tokenPairRoutes[oTok]
+	if !ok {
+		mgr.mutex.RUnlock()
+		return nil, fmt.Errorf("no routes for originToken %s", originToken)
+	}
+	routes, ok := destMap[dTok]
+	mgr.mutex.RUnlock()
+	if !ok || len(routes) == 0 {
+		return nil, fmt.Errorf("no routes for destToken %s", destToken)
+	}
+	return routes, nil
 }
 
 // Query by chain and a token address (origin side)
 func (mgr *AcrossManager) GetRoutesByChainAndToken(chainId int64, tokenAddr string) ([]*AcrossRoute, error) {
-    t := strings.ToLower(strings.TrimSpace(tokenAddr))
-    mgr.mutex.RLock()
-    tokMap, ok := mgr.chainTokenRoutes[chainId]
-    if !ok {
-        mgr.mutex.RUnlock()
-        return nil, fmt.Errorf("no routes for chainId %d", chainId)
-    }
-    routes, ok := tokMap[t]
-    mgr.mutex.RUnlock()
-    if !ok || len(routes) == 0 {
-        return nil, fmt.Errorf("no routes for token %s on chain %d", tokenAddr, chainId)
-    }
-    return routes, nil
+	t := strings.ToLower(strings.TrimSpace(tokenAddr))
+	mgr.mutex.RLock()
+	tokMap, ok := mgr.chainTokenRoutes[chainId]
+	if !ok {
+		mgr.mutex.RUnlock()
+		return nil, fmt.Errorf("no routes for chainId %d", chainId)
+	}
+	routes, ok := tokMap[t]
+	mgr.mutex.RUnlock()
+	if !ok || len(routes) == 0 {
+		return nil, fmt.Errorf("no routes for token %s on chain %d", tokenAddr, chainId)
+	}
+	return routes, nil
 }
 
 // Query by symbol pair
 func (mgr *AcrossManager) GetRoutesBySymbolPair(originSymbol, destSymbol string) ([]*AcrossRoute, error) {
-    o := strings.ToLower(strings.TrimSpace(originSymbol))
-    d := strings.ToLower(strings.TrimSpace(destSymbol))
-    mgr.mutex.RLock()
-    destMap, ok := mgr.symbolPairRoutes[o]
-    if !ok {
-        mgr.mutex.RUnlock()
-        return nil, fmt.Errorf("no routes for originSymbol %s", originSymbol)
-    }
-    routes, ok := destMap[d]
-    mgr.mutex.RUnlock()
-    if !ok || len(routes) == 0 {
-        return nil, fmt.Errorf("no routes for destSymbol %s", destSymbol)
-    }
-    return routes, nil
+	o := strings.ToLower(strings.TrimSpace(originSymbol))
+	d := strings.ToLower(strings.TrimSpace(destSymbol))
+	mgr.mutex.RLock()
+	destMap, ok := mgr.symbolPairRoutes[o]
+	if !ok {
+		mgr.mutex.RUnlock()
+		return nil, fmt.Errorf("no routes for originSymbol %s", originSymbol)
+	}
+	routes, ok := destMap[d]
+	mgr.mutex.RUnlock()
+	if !ok || len(routes) == 0 {
+		return nil, fmt.Errorf("no routes for destSymbol %s", destSymbol)
+	}
+	return routes, nil
 }
 
 // Get route by ID
 func (mgr *AcrossManager) GetRouteByID(id int64) (*AcrossRoute, bool) {
-    mgr.mutex.RLock()
-    r, ok := mgr.routeById[id]
-    mgr.mutex.RUnlock()
-    return r, ok
+	mgr.mutex.RLock()
+	r, ok := mgr.routeById[id]
+	mgr.mutex.RUnlock()
+	return r, ok
 }
 
 // GetUniqueRouteByChainsAndTokens finds a single route by chain pair and token pair (addresses).
 // Inputs must specify: originChainId, destinationChainId, originToken, destinationToken.
 // Returns the unique matching route from in-memory cache; returns error if none or multiple found.
 func (mgr *AcrossManager) GetUniqueRouteByChainsAndTokens(originChainId, destinationChainId int64, originToken, destinationToken string) (*AcrossRoute, error) {
-    oTok := strings.ToLower(strings.TrimSpace(originToken))
-    dTok := strings.ToLower(strings.TrimSpace(destinationToken))
+	oTok := strings.ToLower(strings.TrimSpace(originToken))
+	dTok := strings.ToLower(strings.TrimSpace(destinationToken))
 
-    // Narrow to the chain pair first
-    mgr.mutex.RLock()
-    destMap, ok := mgr.originToDestRoutes[originChainId]
-    if !ok {
-        mgr.mutex.RUnlock()
-        return nil, fmt.Errorf("no routes for originChainId %d", originChainId)
-    }
-    routes, ok := destMap[destinationChainId]
-    mgr.mutex.RUnlock()
-    if !ok || len(routes) == 0 {
-        return nil, fmt.Errorf("no routes for destChainId %d", destinationChainId)
-    }
+	// Narrow to the chain pair first
+	mgr.mutex.RLock()
+	destMap, ok := mgr.originToDestRoutes[originChainId]
+	if !ok {
+		mgr.mutex.RUnlock()
+		return nil, fmt.Errorf("no routes for originChainId %d", originChainId)
+	}
+	routes, ok := destMap[destinationChainId]
+	mgr.mutex.RUnlock()
+	if !ok || len(routes) == 0 {
+		return nil, fmt.Errorf("no routes for destChainId %d", destinationChainId)
+	}
 
-    var match *AcrossRoute
-    for _, r := range routes {
-        if r == nil {
-            continue
-        }
-        roTok := strings.ToLower(strings.TrimSpace(r.OriginToken))
-        rdTok := strings.ToLower(strings.TrimSpace(r.DestinationToken))
-        if roTok == oTok && rdTok == dTok {
-            if match != nil {
-                return nil, fmt.Errorf("multiple routes found for originChainId=%d destinationChainId=%d originToken=%s destinationToken=%s", originChainId, destinationChainId, originToken, destinationToken)
-            }
-            match = r
-        }
-    }
-    if match == nil {
-        return nil, fmt.Errorf("no matching route for originChainId=%d destinationChainId=%d originToken=%s destinationToken=%s", originChainId, destinationChainId, originToken, destinationToken)
-    }
-    return match, nil
+	var match *AcrossRoute
+	for _, r := range routes {
+		if r == nil {
+			continue
+		}
+		roTok := strings.ToLower(strings.TrimSpace(r.OriginToken))
+		rdTok := strings.ToLower(strings.TrimSpace(r.DestinationToken))
+		if roTok == oTok && rdTok == dTok {
+			if match != nil {
+				return nil, fmt.Errorf("multiple routes found for originChainId=%d destinationChainId=%d originToken=%s destinationToken=%s", originChainId, destinationChainId, originToken, destinationToken)
+			}
+			match = r
+		}
+	}
+	if match == nil {
+		return nil, fmt.Errorf("no matching route for originChainId=%d destinationChainId=%d originToken=%s destinationToken=%s", originChainId, destinationChainId, originToken, destinationToken)
+	}
+	return match, nil
 }
 
 // Validate route supports amount in [min, max]
 func (mgr *AcrossManager) ValidateRoute(route *AcrossRoute, amount *big.Int) error {
-    if route == nil {
-        return fmt.Errorf("nil route")
-    }
-    if amount == nil || amount.Sign() <= 0 {
-        return fmt.Errorf("invalid amount")
-    }
-    min := new(big.Int)
-    max := new(big.Int)
-    if _, ok := min.SetString(strings.TrimSpace(route.MinAmount), 10); !ok {
-        return fmt.Errorf("invalid minAmount: %s", route.MinAmount)
-    }
-    if _, ok := max.SetString(strings.TrimSpace(route.MaxAmount), 10); !ok {
-        return fmt.Errorf("invalid maxAmount: %s", route.MaxAmount)
-    }
-    if amount.Cmp(min) < 0 {
-        return fmt.Errorf("amount below min")
-    }
-    if max.Sign() > 0 && amount.Cmp(max) > 0 { // max=0 means unlimited
-        return fmt.Errorf("amount above max")
-    }
-    return nil
+	if route == nil {
+		return fmt.Errorf("nil route")
+	}
+	if amount == nil || amount.Sign() <= 0 {
+		return fmt.Errorf("invalid amount")
+	}
+	min := new(big.Int)
+	max := new(big.Int)
+	if _, ok := min.SetString(strings.TrimSpace(route.MinAmount), 10); !ok {
+		return fmt.Errorf("invalid minAmount: %s", route.MinAmount)
+	}
+	if _, ok := max.SetString(strings.TrimSpace(route.MaxAmount), 10); !ok {
+		return fmt.Errorf("invalid maxAmount: %s", route.MaxAmount)
+	}
+	if amount.Cmp(min) < 0 {
+		return fmt.Errorf("amount below min")
+	}
+	if max.Sign() > 0 && amount.Cmp(max) > 0 { // max=0 means unlimited
+		return fmt.Errorf("amount above max")
+	}
+	return nil
 }
 
 // HasAcrossRoute checks cached routes for a chain pair and token symbol.
@@ -386,132 +386,132 @@ func (mgr *AcrossManager) ValidateRoute(route *AcrossRoute, amount *big.Int) err
 // If provided, it will be validated against route min/max directly.
 // Returns 1 if a matching route exists (and amount fits when provided), otherwise 0.
 func (mgr *AcrossManager) HasAcrossRoute(fromChainId, toChainId int64, amountUi string, tokenSymbol string) (int32, error) {
-    routes, err := mgr.GetRoutesByChains(fromChainId, toChainId)
-    if err != nil || len(routes) == 0 {
-        return 0, nil
-    }
+	routes, err := mgr.GetRoutesByChains(fromChainId, toChainId)
+	if err != nil || len(routes) == 0 {
+		return 0, nil
+	}
 
-    sym := strings.ToLower(strings.TrimSpace(tokenSymbol))
-    amountUi = strings.TrimSpace(amountUi)
+	sym := strings.ToLower(strings.TrimSpace(tokenSymbol))
+	amountUi = strings.TrimSpace(amountUi)
 
-    if amountUi == "" {
-        return 0, nil
-    }
+	if amountUi == "" {
+		return 0, nil
+	}
 
-    // Parse UI amount as decimal (supports "1.1"), no decimals scaling
-    var amtRat *big.Rat
-    if amountUi != "" {
-        v := new(big.Rat)
-        if _, ok := v.SetString(amountUi); !ok {
-            return 0, fmt.Errorf("invalid amount: %s", amountUi)
-        }
-        // Non-positive amounts are invalid
-        if v.Sign() <= 0 {
-            return 0, fmt.Errorf("invalid amount: %s", amountUi)
-        }
-        amtRat = v
-    }
+	// Parse UI amount as decimal (supports "1.1"), no decimals scaling
+	var amtRat *big.Rat
+	if amountUi != "" {
+		v := new(big.Rat)
+		if _, ok := v.SetString(amountUi); !ok {
+			return 0, fmt.Errorf("invalid amount: %s", amountUi)
+		}
+		// Non-positive amounts are invalid
+		if v.Sign() <= 0 {
+			return 0, fmt.Errorf("invalid amount: %s", amountUi)
+		}
+		amtRat = v
+	}
 
-    for _, r := range routes {
-        if r == nil {
-            continue
-        }
-        oSym := strings.ToLower(strings.TrimSpace(r.OriginTokenSymbol))
-        dSym := strings.ToLower(strings.TrimSpace(r.DestinationTokenSymbol))
+	for _, r := range routes {
+		if r == nil {
+			continue
+		}
+		oSym := strings.ToLower(strings.TrimSpace(r.OriginTokenSymbol))
+		dSym := strings.ToLower(strings.TrimSpace(r.DestinationTokenSymbol))
 
-        // Match by symbol on either side
-        if sym != "" && !(oSym == sym || dSym == sym) {
-            continue
-        }
+		// Match by symbol on either side
+		if sym != "" && !(oSym == sym || dSym == sym) {
+			continue
+		}
 
-        // If amount provided, ensure it fits within route constraints using decimal comparison
-        if amtRat != nil {
-            minStr := strings.TrimSpace(r.MinAmount)
-            maxStr := strings.TrimSpace(r.MaxAmount)
+		// If amount provided, ensure it fits within route constraints using decimal comparison
+		if amtRat != nil {
+			minStr := strings.TrimSpace(r.MinAmount)
+			maxStr := strings.TrimSpace(r.MaxAmount)
 
-            // Parse min
-            minRat := new(big.Rat)
-            if minStr == "" {
-                minRat.SetInt64(0)
-            } else if _, ok := minRat.SetString(minStr); !ok {
-                // Invalid min; skip this route
-                continue
-            }
+			// Parse min
+			minRat := new(big.Rat)
+			if minStr == "" {
+				minRat.SetInt64(0)
+			} else if _, ok := minRat.SetString(minStr); !ok {
+				// Invalid min; skip this route
+				continue
+			}
 
-            // Parse max ("0" or empty means unlimited)
-            maxRat := new(big.Rat)
-            unlimited := maxStr == "" || strings.EqualFold(maxStr, "0")
-            if !unlimited {
-                if _, ok := maxRat.SetString(maxStr); !ok {
-                    // Invalid max; skip this route
-                    continue
-                }
-            }
+			// Parse max ("0" or empty means unlimited)
+			maxRat := new(big.Rat)
+			unlimited := maxStr == "" || strings.EqualFold(maxStr, "0")
+			if !unlimited {
+				if _, ok := maxRat.SetString(maxStr); !ok {
+					// Invalid max; skip this route
+					continue
+				}
+			}
 
-            // amt >= min
-            if amtRat.Cmp(minRat) < 0 {
-                continue
-            }
-            // and amt <= max (when limited)
-            if !unlimited && amtRat.Cmp(maxRat) > 0 {
-                continue
-            }
-        }
+			// amt >= min
+			if amtRat.Cmp(minRat) < 0 {
+				continue
+			}
+			// and amt <= max (when limited)
+			if !unlimited && amtRat.Cmp(maxRat) > 0 {
+				continue
+			}
+		}
 
-        return 1, nil
-    }
-    return 0, nil
+		return 1, nil
+	}
+	return 0, nil
 }
 
 // InvalidateCache clears in-memory indexes (does not touch DB)
 func (mgr *AcrossManager) InvalidateCache() {
-    mgr.mutex.Lock()
-    mgr.originToDestRoutes = make(map[int64]map[int64][]*AcrossRoute)
-    mgr.tokenPairRoutes = make(map[string]map[string][]*AcrossRoute)
-    mgr.chainTokenRoutes = make(map[int64]map[string][]*AcrossRoute)
-    mgr.symbolPairRoutes = make(map[string]map[string][]*AcrossRoute)
-    mgr.routeById = make(map[int64]*AcrossRoute)
-    mgr.mutex.Unlock()
+	mgr.mutex.Lock()
+	mgr.originToDestRoutes = make(map[int64]map[int64][]*AcrossRoute)
+	mgr.tokenPairRoutes = make(map[string]map[string][]*AcrossRoute)
+	mgr.chainTokenRoutes = make(map[int64]map[string][]*AcrossRoute)
+	mgr.symbolPairRoutes = make(map[string]map[string][]*AcrossRoute)
+	mgr.routeById = make(map[int64]*AcrossRoute)
+	mgr.mutex.Unlock()
 }
 
 // Start launches periodic sync using given interval.
 func (mgr *AcrossManager) StartPeriodicSync(interval time.Duration) {
-    mgr.mutex.Lock()
-    if mgr.stopCh != nil {
-        mgr.mutex.Unlock()
-        return
-    }
-    mgr.stopCh = make(chan struct{})
-    mgr.mutex.Unlock()
+	mgr.mutex.Lock()
+	if mgr.stopCh != nil {
+		mgr.mutex.Unlock()
+		return
+	}
+	mgr.stopCh = make(chan struct{})
+	mgr.mutex.Unlock()
 
-    go func() {
-        ticker := time.NewTicker(interval)
-        defer ticker.Stop()
-        for {
-            select {
-            case <-ticker.C:
-                if err := mgr.SyncRoutesWithDB(); err != nil {
-                    mgr.alerter.AlertText("periodic SyncRoutesWithDB error", err)
-                    continue
-                }
-                if err := mgr.LoadAllRoutes(); err != nil {
-                    mgr.alerter.AlertText("periodic LoadAllRoutes error", err)
-                }
-            case <-mgr.stopCh:
-                return
-            }
-        }
-    }()
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if err := mgr.SyncRoutesWithDB(); err != nil {
+					mgr.alerter.AlertText("periodic SyncRoutesWithDB error", err)
+					continue
+				}
+				if err := mgr.LoadAllRoutes(); err != nil {
+					mgr.alerter.AlertText("periodic LoadAllRoutes error", err)
+				}
+			case <-mgr.stopCh:
+				return
+			}
+		}
+	}()
 }
 
 // StopPeriodicSync stops the periodic sync goroutine.
 func (mgr *AcrossManager) StopPeriodicSync() {
-    mgr.mutex.Lock()
-    if mgr.stopCh != nil {
-        close(mgr.stopCh)
-        mgr.stopCh = nil
-    }
-    mgr.mutex.Unlock()
+	mgr.mutex.Lock()
+	if mgr.stopCh != nil {
+		close(mgr.stopCh)
+		mgr.stopCh = nil
+	}
+	mgr.mutex.Unlock()
 }
 
 // Start uses manager's default interval.
@@ -519,155 +519,149 @@ func (mgr *AcrossManager) Start() { mgr.StartPeriodicSync(mgr.routeRefreshInterv
 
 // GetSupportedChains returns all chain IDs observed in routes (origin and destination).
 func (mgr *AcrossManager) GetSupportedChains() []int64 {
-    mgr.mutex.RLock()
-    chains := make(map[int64]struct{})
-    for o, destMap := range mgr.originToDestRoutes {
-        chains[o] = struct{}{}
-        for d := range destMap {
-            chains[d] = struct{}{}
-        }
-    }
-    mgr.mutex.RUnlock()
-    res := make([]int64, 0, len(chains))
-    for c := range chains {
-        res = append(res, c)
-    }
-    return res
+	mgr.mutex.RLock()
+	chains := make(map[int64]struct{})
+	for o, destMap := range mgr.originToDestRoutes {
+		chains[o] = struct{}{}
+		for d := range destMap {
+			chains[d] = struct{}{}
+		}
+	}
+	mgr.mutex.RUnlock()
+	res := make([]int64, 0, len(chains))
+	for c := range chains {
+		res = append(res, c)
+	}
+	return res
 }
 
 // GetSupportedTokens returns token addresses supported on a chain (origin side index).
 func (mgr *AcrossManager) GetSupportedTokens(chainId int64) []string {
-    mgr.mutex.RLock()
-    tokMap, ok := mgr.chainTokenRoutes[chainId]
-    if !ok {
-        mgr.mutex.RUnlock()
-        return nil
-    }
-    res := make([]string, 0, len(tokMap))
-    for t := range tokMap {
-        res = append(res, t)
-    }
-    mgr.mutex.RUnlock()
-    return res
+	mgr.mutex.RLock()
+	tokMap, ok := mgr.chainTokenRoutes[chainId]
+	if !ok {
+		mgr.mutex.RUnlock()
+		return nil
+	}
+	res := make([]string, 0, len(tokMap))
+	for t := range tokMap {
+		res = append(res, t)
+	}
+	mgr.mutex.RUnlock()
+	return res
 }
 
 // ---- Swap Approval (Across) ----
 // Minimal request/response models to query total fees from Across swap approval API.
 type approvalActionArg struct {
-    Value               string `json:"value"`
-    PopulateDynamically bool   `json:"populateDynamically,omitempty"`
-    BalanceSourceToken  string `json:"balanceSourceToken,omitempty"`
+	Value               string `json:"value"`
+	PopulateDynamically bool   `json:"populateDynamically,omitempty"`
+	BalanceSourceToken  string `json:"balanceSourceToken,omitempty"`
 }
 
 type approvalAction struct {
-    Target            string              `json:"target"`
-    FunctionSignature string              `json:"functionSignature"`
-    Args              []approvalActionArg `json:"args"`
-    Value             string              `json:"value"`
-    IsNativeTransfer  bool                `json:"isNativeTransfer"`
+	Target            string              `json:"target"`
+	FunctionSignature string              `json:"functionSignature"`
+	Args              []approvalActionArg `json:"args"`
+	Value             string              `json:"value"`
+	IsNativeTransfer  bool                `json:"isNativeTransfer"`
 }
 
 type swapApprovalRequest struct {
-    Actions []approvalAction `json:"actions"`
+	Actions []approvalAction `json:"actions"`
 }
 
 type swapApprovalResponse struct {
-    Fees struct {
-        Total struct {
-            Amount    string `json:"amount"`
-            AmountUsd string `json:"amountUsd"`
-            Pct       string `json:"pct"`
-            Token     struct {
-                Decimals int32  `json:"decimals"`
-                Symbol   string `json:"symbol"`
-                Address  string `json:"address"`
-                Name     string `json:"name"`
-                ChainId  int64  `json:"chainId"`
-            } `json:"token"`
-        } `json:"total"`
-    } `json:"fees"`
-}
-
-// ApprovalTotalFee returns the subset of fields requested by the user from fees.total
-type ApprovalTotalFee struct {
-    Amount       string
-    TokenSymbol  string
-    TokenAddress string
-    TokenName    string
-    TokenChainId int64
+	Fees struct {
+		Total struct {
+			Amount    string `json:"amount"`
+			AmountUsd string `json:"amountUsd"`
+			Pct       string `json:"pct"`
+			Token     struct {
+				Decimals int32  `json:"decimals"`
+				Symbol   string `json:"symbol"`
+				Address  string `json:"address"`
+				Name     string `json:"name"`
+				ChainId  int64  `json:"chainId"`
+			} `json:"token"`
+		} `json:"total"`
+	} `json:"fees"`
 }
 
 // GetSwapApprovalTotalFee calls Across swap approval API and returns fees.total fields.
 // Parameters:
-//  - amount: input amount as string (in smallest unit of inputToken)
-//  - inputToken: token address on origin chain
-//  - outputToken: token address on destination chain
-//  - originChainId, destinationChainId: chain IDs
-//  - depositor: recipient address for the transfer action
-func (mgr *AcrossManager) GetSwapApprovalTotalFee(amount string, inputToken string, outputToken string, originChainId, destinationChainId int64, depositor string) (*ApprovalTotalFee, error) {
-    base := "https://app.across.to/api/swap/approval"
-    q := url.Values{}
-    q.Set("tradeType", "exactInput")
-    q.Set("amount", strings.TrimSpace(amount))
-    q.Set("inputToken", strings.TrimSpace(inputToken))
-    q.Set("outputToken", strings.TrimSpace(outputToken))
-    q.Set("originChainId", fmt.Sprintf("%d", originChainId))
-    q.Set("destinationChainId", fmt.Sprintf("%d", destinationChainId))
-    q.Set("depositor", strings.TrimSpace(depositor))
+//   - amount: input amount as string (in smallest unit of inputToken)
+//   - inputToken: token address on origin chain
+//   - outputToken: token address on destination chain
+//   - originChainId, destinationChainId: chain IDs
+//   - depositor: recipient address for the transfer action
+//
+// GetSwapApprovalTotalFee calls Across swap approval API and returns only the total fee amount.
+// Parameters:
+//   - amount: input amount as string (in smallest unit of inputToken)
+//   - inputToken: token address on origin chain
+//   - outputToken: token address on destination chain
+//   - originChainId, destinationChainId: chain IDs
+//   - depositor: recipient address for the transfer action
+//
+// Returns:
+//   - amount string (fees.total.amount)
+func (mgr *AcrossManager) GetSwapApprovalTotalFee(amount string, inputToken string, outputToken string, originChainId, destinationChainId int64, depositor string) (string, error) {
+	base := "https://app.across.to/api/swap/approval"
+	q := url.Values{}
+	q.Set("tradeType", "exactInput")
+	q.Set("amount", strings.TrimSpace(amount))
+	q.Set("inputToken", strings.TrimSpace(inputToken))
+	q.Set("outputToken", strings.TrimSpace(outputToken))
+	q.Set("originChainId", fmt.Sprintf("%d", originChainId))
+	q.Set("destinationChainId", fmt.Sprintf("%d", destinationChainId))
+	q.Set("depositor", strings.TrimSpace(depositor))
 
-    // Build minimal actions payload as shown in spec
-    reqBody := swapApprovalRequest{
-        Actions: []approvalAction{
-            {
-                Target:            strings.TrimSpace(inputToken),
-                FunctionSignature: "function transfer(address to, uint256 value)",
-                Args: []approvalActionArg{
-                    {Value: strings.TrimSpace(depositor), PopulateDynamically: false},
-                    {Value: "0", PopulateDynamically: true, BalanceSourceToken: strings.TrimSpace(inputToken)},
-                },
-                Value:            "0",
-                IsNativeTransfer: false,
-            },
-        },
-    }
-    payload, err := json.Marshal(reqBody)
-    if err != nil {
-        return nil, fmt.Errorf("marshal approval request error: %w", err)
-    }
+	// Build minimal actions payload as shown in spec
+	reqBody := swapApprovalRequest{
+		Actions: []approvalAction{
+			{
+				Target:            strings.TrimSpace(inputToken),
+				FunctionSignature: "function transfer(address to, uint256 value)",
+				Args: []approvalActionArg{
+					{Value: strings.TrimSpace(depositor), PopulateDynamically: false},
+					{Value: "0", PopulateDynamically: true, BalanceSourceToken: strings.TrimSpace(inputToken)},
+				},
+				Value:            "0",
+				IsNativeTransfer: false,
+			},
+		},
+	}
+	payload, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", fmt.Errorf("marshal approval request error: %w", err)
+	}
 
-    u := base + "?" + q.Encode()
-    req, err := http.NewRequest("POST", u, bytes.NewReader(payload))
-    if err != nil {
-        return nil, fmt.Errorf("new request error: %w", err)
-    }
-    req.Header.Set("Content-Type", "application/json")
-    req.Header.Set("Accept", "*/*")
+	u := base + "?" + q.Encode()
+	req, err := http.NewRequest("POST", u, bytes.NewReader(payload))
+	if err != nil {
+		return "", fmt.Errorf("new request error: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "*/*")
 
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil {
-        return nil, fmt.Errorf("approval request error: %w", err)
-    }
-    defer resp.Body.Close()
-    if resp.StatusCode != http.StatusOK {
-        b, _ := io.ReadAll(resp.Body)
-        return nil, fmt.Errorf("approval request status %d: %s", resp.StatusCode, strings.TrimSpace(string(b)))
-    }
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("approval request error: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("approval request status %d: %s", resp.StatusCode, strings.TrimSpace(string(b)))
+	}
 
-    body, err := io.ReadAll(resp.Body)
-    if err != nil {
-        return nil, fmt.Errorf("read approval response error: %w", err)
-    }
-    var r swapApprovalResponse
-    if err := json.Unmarshal(body, &r); err != nil {
-        return nil, fmt.Errorf("unmarshal approval response error: %w", err)
-    }
-
-    res := &ApprovalTotalFee{
-        Amount:       strings.TrimSpace(r.Fees.Total.Amount),
-        TokenSymbol:  strings.TrimSpace(r.Fees.Total.Token.Symbol),
-        TokenAddress: strings.TrimSpace(r.Fees.Total.Token.Address),
-        TokenName:    strings.TrimSpace(r.Fees.Total.Token.Name),
-        TokenChainId: r.Fees.Total.Token.ChainId,
-    }
-    return res, nil
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("read approval response error: %w", err)
+	}
+	var r swapApprovalResponse
+	if err := json.Unmarshal(body, &r); err != nil {
+		return "", fmt.Errorf("unmarshal approval response error: %w", err)
+	}
+	return strings.TrimSpace(r.Fees.Total.Amount), nil
 }
