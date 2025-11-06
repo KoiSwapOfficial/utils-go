@@ -638,7 +638,7 @@ func (mgr *AcrossManager) GetSwapApprovalTotalFee(amount string, inputToken stri
 	}
 
 	u := base + "?" + q.Encode()
-	req, err := http.NewRequest("POST", u, bytes.NewReader(payload))
+	req, err := http.NewRequest("GET", u, bytes.NewReader(payload))
 	if err != nil {
 		return "", fmt.Errorf("new request error: %w", err)
 	}
