@@ -1,15 +1,17 @@
 package loader
 
 import (
-	"database/sql"
-	"encoding/json"
-	"fmt"
-	"io"
-	"math/big"
-	"net/http"
-	"strings"
-	"sync"
-	"time"
+    "bytes"
+    "database/sql"
+    "encoding/json"
+    "fmt"
+    "io"
+    "math/big"
+    "net/http"
+    "net/url"
+    "strings"
+    "sync"
+    "time"
 
 	"github.com/owlto-dao/utils-go/alert"
 )
@@ -314,6 +316,46 @@ func (mgr *AcrossManager) GetRouteByID(id int64) (*AcrossRoute, bool) {
     return r, ok
 }
 
+// GetUniqueRouteByChainsAndTokens finds a single route by chain pair and token pair (addresses).
+// Inputs must specify: originChainId, destinationChainId, originToken, destinationToken.
+// Returns the unique matching route from in-memory cache; returns error if none or multiple found.
+func (mgr *AcrossManager) GetUniqueRouteByChainsAndTokens(originChainId, destinationChainId int64, originToken, destinationToken string) (*AcrossRoute, error) {
+    oTok := strings.ToLower(strings.TrimSpace(originToken))
+    dTok := strings.ToLower(strings.TrimSpace(destinationToken))
+
+    // Narrow to the chain pair first
+    mgr.mutex.RLock()
+    destMap, ok := mgr.originToDestRoutes[originChainId]
+    if !ok {
+        mgr.mutex.RUnlock()
+        return nil, fmt.Errorf("no routes for originChainId %d", originChainId)
+    }
+    routes, ok := destMap[destinationChainId]
+    mgr.mutex.RUnlock()
+    if !ok || len(routes) == 0 {
+        return nil, fmt.Errorf("no routes for destChainId %d", destinationChainId)
+    }
+
+    var match *AcrossRoute
+    for _, r := range routes {
+        if r == nil {
+            continue
+        }
+        roTok := strings.ToLower(strings.TrimSpace(r.OriginToken))
+        rdTok := strings.ToLower(strings.TrimSpace(r.DestinationToken))
+        if roTok == oTok && rdTok == dTok {
+            if match != nil {
+                return nil, fmt.Errorf("multiple routes found for originChainId=%d destinationChainId=%d originToken=%s destinationToken=%s", originChainId, destinationChainId, originToken, destinationToken)
+            }
+            match = r
+        }
+    }
+    if match == nil {
+        return nil, fmt.Errorf("no matching route for originChainId=%d destinationChainId=%d originToken=%s destinationToken=%s", originChainId, destinationChainId, originToken, destinationToken)
+    }
+    return match, nil
+}
+
 // Validate route supports amount in [min, max]
 func (mgr *AcrossManager) ValidateRoute(route *AcrossRoute, amount *big.Int) error {
     if route == nil {
@@ -337,6 +379,88 @@ func (mgr *AcrossManager) ValidateRoute(route *AcrossRoute, amount *big.Int) err
         return fmt.Errorf("amount above max")
     }
     return nil
+}
+
+// HasAcrossRoute checks cached routes for a chain pair and token symbol.
+// amountUi is the raw amount string (base units, no decimals scaling).
+// If provided, it will be validated against route min/max directly.
+// Returns 1 if a matching route exists (and amount fits when provided), otherwise 0.
+func (mgr *AcrossManager) HasAcrossRoute(fromChainId, toChainId int64, amountUi string, tokenSymbol string) (int32, error) {
+    routes, err := mgr.GetRoutesByChains(fromChainId, toChainId)
+    if err != nil || len(routes) == 0 {
+        return 0, nil
+    }
+
+    sym := strings.ToLower(strings.TrimSpace(tokenSymbol))
+    amountUi = strings.TrimSpace(amountUi)
+
+    if amountUi == "" {
+        return 0, nil
+    }
+
+    // Parse UI amount as decimal (supports "1.1"), no decimals scaling
+    var amtRat *big.Rat
+    if amountUi != "" {
+        v := new(big.Rat)
+        if _, ok := v.SetString(amountUi); !ok {
+            return 0, fmt.Errorf("invalid amount: %s", amountUi)
+        }
+        // Non-positive amounts are invalid
+        if v.Sign() <= 0 {
+            return 0, fmt.Errorf("invalid amount: %s", amountUi)
+        }
+        amtRat = v
+    }
+
+    for _, r := range routes {
+        if r == nil {
+            continue
+        }
+        oSym := strings.ToLower(strings.TrimSpace(r.OriginTokenSymbol))
+        dSym := strings.ToLower(strings.TrimSpace(r.DestinationTokenSymbol))
+
+        // Match by symbol on either side
+        if sym != "" && !(oSym == sym || dSym == sym) {
+            continue
+        }
+
+        // If amount provided, ensure it fits within route constraints using decimal comparison
+        if amtRat != nil {
+            minStr := strings.TrimSpace(r.MinAmount)
+            maxStr := strings.TrimSpace(r.MaxAmount)
+
+            // Parse min
+            minRat := new(big.Rat)
+            if minStr == "" {
+                minRat.SetInt64(0)
+            } else if _, ok := minRat.SetString(minStr); !ok {
+                // Invalid min; skip this route
+                continue
+            }
+
+            // Parse max ("0" or empty means unlimited)
+            maxRat := new(big.Rat)
+            unlimited := maxStr == "" || strings.EqualFold(maxStr, "0")
+            if !unlimited {
+                if _, ok := maxRat.SetString(maxStr); !ok {
+                    // Invalid max; skip this route
+                    continue
+                }
+            }
+
+            // amt >= min
+            if amtRat.Cmp(minRat) < 0 {
+                continue
+            }
+            // and amt <= max (when limited)
+            if !unlimited && amtRat.Cmp(maxRat) > 0 {
+                continue
+            }
+        }
+
+        return 1, nil
+    }
+    return 0, nil
 }
 
 // InvalidateCache clears in-memory indexes (does not touch DB)
@@ -425,4 +549,125 @@ func (mgr *AcrossManager) GetSupportedTokens(chainId int64) []string {
     }
     mgr.mutex.RUnlock()
     return res
+}
+
+// ---- Swap Approval (Across) ----
+// Minimal request/response models to query total fees from Across swap approval API.
+type approvalActionArg struct {
+    Value               string `json:"value"`
+    PopulateDynamically bool   `json:"populateDynamically,omitempty"`
+    BalanceSourceToken  string `json:"balanceSourceToken,omitempty"`
+}
+
+type approvalAction struct {
+    Target            string              `json:"target"`
+    FunctionSignature string              `json:"functionSignature"`
+    Args              []approvalActionArg `json:"args"`
+    Value             string              `json:"value"`
+    IsNativeTransfer  bool                `json:"isNativeTransfer"`
+}
+
+type swapApprovalRequest struct {
+    Actions []approvalAction `json:"actions"`
+}
+
+type swapApprovalResponse struct {
+    Fees struct {
+        Total struct {
+            Amount    string `json:"amount"`
+            AmountUsd string `json:"amountUsd"`
+            Pct       string `json:"pct"`
+            Token     struct {
+                Decimals int32  `json:"decimals"`
+                Symbol   string `json:"symbol"`
+                Address  string `json:"address"`
+                Name     string `json:"name"`
+                ChainId  int64  `json:"chainId"`
+            } `json:"token"`
+        } `json:"total"`
+    } `json:"fees"`
+}
+
+// ApprovalTotalFee returns the subset of fields requested by the user from fees.total
+type ApprovalTotalFee struct {
+    Amount       string
+    TokenSymbol  string
+    TokenAddress string
+    TokenName    string
+    TokenChainId int64
+}
+
+// GetSwapApprovalTotalFee calls Across swap approval API and returns fees.total fields.
+// Parameters:
+//  - amount: input amount as string (in smallest unit of inputToken)
+//  - inputToken: token address on origin chain
+//  - outputToken: token address on destination chain
+//  - originChainId, destinationChainId: chain IDs
+//  - depositor: recipient address for the transfer action
+func (mgr *AcrossManager) GetSwapApprovalTotalFee(amount string, inputToken string, outputToken string, originChainId, destinationChainId int64, depositor string) (*ApprovalTotalFee, error) {
+    base := "https://app.across.to/api/swap/approval"
+    q := url.Values{}
+    q.Set("tradeType", "exactInput")
+    q.Set("amount", strings.TrimSpace(amount))
+    q.Set("inputToken", strings.TrimSpace(inputToken))
+    q.Set("outputToken", strings.TrimSpace(outputToken))
+    q.Set("originChainId", fmt.Sprintf("%d", originChainId))
+    q.Set("destinationChainId", fmt.Sprintf("%d", destinationChainId))
+    q.Set("depositor", strings.TrimSpace(depositor))
+
+    // Build minimal actions payload as shown in spec
+    reqBody := swapApprovalRequest{
+        Actions: []approvalAction{
+            {
+                Target:            strings.TrimSpace(inputToken),
+                FunctionSignature: "function transfer(address to, uint256 value)",
+                Args: []approvalActionArg{
+                    {Value: strings.TrimSpace(depositor), PopulateDynamically: false},
+                    {Value: "0", PopulateDynamically: true, BalanceSourceToken: strings.TrimSpace(inputToken)},
+                },
+                Value:            "0",
+                IsNativeTransfer: false,
+            },
+        },
+    }
+    payload, err := json.Marshal(reqBody)
+    if err != nil {
+        return nil, fmt.Errorf("marshal approval request error: %w", err)
+    }
+
+    u := base + "?" + q.Encode()
+    req, err := http.NewRequest("POST", u, bytes.NewReader(payload))
+    if err != nil {
+        return nil, fmt.Errorf("new request error: %w", err)
+    }
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("Accept", "*/*")
+
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+        return nil, fmt.Errorf("approval request error: %w", err)
+    }
+    defer resp.Body.Close()
+    if resp.StatusCode != http.StatusOK {
+        b, _ := io.ReadAll(resp.Body)
+        return nil, fmt.Errorf("approval request status %d: %s", resp.StatusCode, strings.TrimSpace(string(b)))
+    }
+
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return nil, fmt.Errorf("read approval response error: %w", err)
+    }
+    var r swapApprovalResponse
+    if err := json.Unmarshal(body, &r); err != nil {
+        return nil, fmt.Errorf("unmarshal approval response error: %w", err)
+    }
+
+    res := &ApprovalTotalFee{
+        Amount:       strings.TrimSpace(r.Fees.Total.Amount),
+        TokenSymbol:  strings.TrimSpace(r.Fees.Total.Token.Symbol),
+        TokenAddress: strings.TrimSpace(r.Fees.Total.Token.Address),
+        TokenName:    strings.TrimSpace(r.Fees.Total.Token.Name),
+        TokenChainId: r.Fees.Total.Token.ChainId,
+    }
+    return res, nil
 }
