@@ -13,7 +13,12 @@
       },
       {
         "internalType": "address",
-        "name": "_maker",
+        "name": "_feeCollector",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_owner",
         "type": "address"
       }
     ],
@@ -74,6 +79,19 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Paused",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "address",
         "name": "token",
@@ -93,6 +111,32 @@
       }
     ],
     "name": "TokenRescued",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Unpaused",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "_feeCollector",
+        "type": "address"
+      }
+    ],
+    "name": "UpdateFeeCollector",
     "type": "event"
   },
   {
@@ -181,18 +225,18 @@
             "type": "bytes"
           }
         ],
-        "internalType": "struct Across.AcrossParams",
+        "internalType": "struct BridgeV1.AcrossParams",
         "name": "p",
         "type": "tuple"
       },
       {
         "internalType": "uint256",
-        "name": "bridgeFee",
+        "name": "amount",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "amount",
+        "name": "fee",
         "type": "uint256"
       },
       {
@@ -208,7 +252,7 @@
   },
   {
     "inputs": [],
-    "name": "maker",
+    "name": "feeCollector",
     "outputs": [
       {
         "internalType": "address",
@@ -220,12 +264,40 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
       {
         "internalType": "address",
-        "name": "to",
+        "name": "",
         "type": "address"
-      },
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
       {
         "internalType": "uint256",
         "name": "amount",
@@ -245,17 +317,32 @@
         "type": "address"
       },
       {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
       }
     ],
     "name": "rescueToken",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_feeCollector",
+        "type": "address"
+      }
+    ],
+    "name": "setFeeCollector",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "unpause",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

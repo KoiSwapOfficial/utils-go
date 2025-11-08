@@ -29,8 +29,8 @@ var (
 	_ = abi.ConvertType
 )
 
-// AcrossAcrossParams is an auto generated low-level Go binding around an user-defined struct.
-type AcrossAcrossParams struct {
+// BridgeV1AcrossParams is an auto generated low-level Go binding around an user-defined struct.
+type BridgeV1AcrossParams struct {
 	Receiver             common.Address
 	Refund               common.Address
 	SendingToken         common.Address
@@ -46,7 +46,7 @@ type AcrossAcrossParams struct {
 
 // AcrossDepositMetaData contains all meta data concerning the AcrossDeposit contract.
 var AcrossDepositMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"contractIAcrossSpokePoolV4\",\"name\":\"_spokePool\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_wrappedNative\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_maker\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"caller\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"bridgeFee\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"isNative\",\"type\":\"bool\"}],\"name\":\"DepositExecuted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"NativeRescued\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"TokenRescued\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"SPOKEPOOL\",\"outputs\":[{\"internalType\":\"contractIAcrossSpokePoolV4\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"WRAPPED_NATIVE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"receiver\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"refund\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sendingToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"receivingToken\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"outputAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"destinationChainId\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"exclusiveRelayer\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"quoteTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"fillDeadline\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"exclusivityParameter\",\"type\":\"uint32\"},{\"internalType\":\"bytes\",\"name\":\"message\",\"type\":\"bytes\"}],\"internalType\":\"structAcross.AcrossParams\",\"name\":\"p\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"bridgeFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"isNative\",\"type\":\"bool\"}],\"name\":\"deposit\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"maker\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"rescueNative\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"rescueToken\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"contractIAcrossSpokePoolV4\",\"name\":\"_spokePool\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_wrappedNative\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_feeCollector\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_owner\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"caller\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"bridgeFee\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"isNative\",\"type\":\"bool\"}],\"name\":\"DepositExecuted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"NativeRescued\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Paused\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"TokenRescued\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"Unpaused\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"_feeCollector\",\"type\":\"address\"}],\"name\":\"UpdateFeeCollector\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"SPOKEPOOL\",\"outputs\":[{\"internalType\":\"contractIAcrossSpokePoolV4\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"WRAPPED_NATIVE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"receiver\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"refund\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sendingToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"receivingToken\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"outputAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"destinationChainId\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"exclusiveRelayer\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"quoteTimestamp\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"fillDeadline\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"exclusivityParameter\",\"type\":\"uint32\"},{\"internalType\":\"bytes\",\"name\":\"message\",\"type\":\"bytes\"}],\"internalType\":\"structBridgeV1.AcrossParams\",\"name\":\"p\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"fee\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"isNative\",\"type\":\"bool\"}],\"name\":\"deposit\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"feeCollector\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pause\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"paused\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"rescueNative\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"rescueToken\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_feeCollector\",\"type\":\"address\"}],\"name\":\"setFeeCollector\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"unpause\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // AcrossDepositABI is the input ABI used to generate the binding from.
@@ -257,12 +257,12 @@ func (_AcrossDeposit *AcrossDepositCallerSession) WRAPPEDNATIVE() ([32]byte, err
 	return _AcrossDeposit.Contract.WRAPPEDNATIVE(&_AcrossDeposit.CallOpts)
 }
 
-// Maker is a free data retrieval call binding the contract method 0x50655d8c.
+// FeeCollector is a free data retrieval call binding the contract method 0xc415b95c.
 //
-// Solidity: function maker() view returns(address)
-func (_AcrossDeposit *AcrossDepositCaller) Maker(opts *bind.CallOpts) (common.Address, error) {
+// Solidity: function feeCollector() view returns(address)
+func (_AcrossDeposit *AcrossDepositCaller) FeeCollector(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
-	err := _AcrossDeposit.contract.Call(opts, &out, "maker")
+	err := _AcrossDeposit.contract.Call(opts, &out, "feeCollector")
 
 	if err != nil {
 		return *new(common.Address), err
@@ -274,81 +274,206 @@ func (_AcrossDeposit *AcrossDepositCaller) Maker(opts *bind.CallOpts) (common.Ad
 
 }
 
-// Maker is a free data retrieval call binding the contract method 0x50655d8c.
+// FeeCollector is a free data retrieval call binding the contract method 0xc415b95c.
 //
-// Solidity: function maker() view returns(address)
-func (_AcrossDeposit *AcrossDepositSession) Maker() (common.Address, error) {
-	return _AcrossDeposit.Contract.Maker(&_AcrossDeposit.CallOpts)
+// Solidity: function feeCollector() view returns(address)
+func (_AcrossDeposit *AcrossDepositSession) FeeCollector() (common.Address, error) {
+	return _AcrossDeposit.Contract.FeeCollector(&_AcrossDeposit.CallOpts)
 }
 
-// Maker is a free data retrieval call binding the contract method 0x50655d8c.
+// FeeCollector is a free data retrieval call binding the contract method 0xc415b95c.
 //
-// Solidity: function maker() view returns(address)
-func (_AcrossDeposit *AcrossDepositCallerSession) Maker() (common.Address, error) {
-	return _AcrossDeposit.Contract.Maker(&_AcrossDeposit.CallOpts)
+// Solidity: function feeCollector() view returns(address)
+func (_AcrossDeposit *AcrossDepositCallerSession) FeeCollector() (common.Address, error) {
+	return _AcrossDeposit.Contract.FeeCollector(&_AcrossDeposit.CallOpts)
+}
+
+// Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
+//
+// Solidity: function owner() view returns(address)
+func (_AcrossDeposit *AcrossDepositCaller) Owner(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _AcrossDeposit.contract.Call(opts, &out, "owner")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
+//
+// Solidity: function owner() view returns(address)
+func (_AcrossDeposit *AcrossDepositSession) Owner() (common.Address, error) {
+	return _AcrossDeposit.Contract.Owner(&_AcrossDeposit.CallOpts)
+}
+
+// Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
+//
+// Solidity: function owner() view returns(address)
+func (_AcrossDeposit *AcrossDepositCallerSession) Owner() (common.Address, error) {
+	return _AcrossDeposit.Contract.Owner(&_AcrossDeposit.CallOpts)
+}
+
+// Paused is a free data retrieval call binding the contract method 0x5c975abb.
+//
+// Solidity: function paused() view returns(bool)
+func (_AcrossDeposit *AcrossDepositCaller) Paused(opts *bind.CallOpts) (bool, error) {
+	var out []interface{}
+	err := _AcrossDeposit.contract.Call(opts, &out, "paused")
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// Paused is a free data retrieval call binding the contract method 0x5c975abb.
+//
+// Solidity: function paused() view returns(bool)
+func (_AcrossDeposit *AcrossDepositSession) Paused() (bool, error) {
+	return _AcrossDeposit.Contract.Paused(&_AcrossDeposit.CallOpts)
+}
+
+// Paused is a free data retrieval call binding the contract method 0x5c975abb.
+//
+// Solidity: function paused() view returns(bool)
+func (_AcrossDeposit *AcrossDepositCallerSession) Paused() (bool, error) {
+	return _AcrossDeposit.Contract.Paused(&_AcrossDeposit.CallOpts)
 }
 
 // Deposit is a paid mutator transaction binding the contract method 0x5e3bd9e9.
 //
-// Solidity: function deposit((address,address,address,address,uint256,uint256,bytes32,uint32,uint32,uint32,bytes) p, uint256 bridgeFee, uint256 amount, bool isNative) payable returns()
-func (_AcrossDeposit *AcrossDepositTransactor) Deposit(opts *bind.TransactOpts, p AcrossAcrossParams, bridgeFee *big.Int, amount *big.Int, isNative bool) (*types.Transaction, error) {
-	return _AcrossDeposit.contract.Transact(opts, "deposit", p, bridgeFee, amount, isNative)
+// Solidity: function deposit((address,address,address,address,uint256,uint256,bytes32,uint32,uint32,uint32,bytes) p, uint256 amount, uint256 fee, bool isNative) payable returns()
+func (_AcrossDeposit *AcrossDepositTransactor) Deposit(opts *bind.TransactOpts, p BridgeV1AcrossParams, amount *big.Int, fee *big.Int, isNative bool) (*types.Transaction, error) {
+	return _AcrossDeposit.contract.Transact(opts, "deposit", p, amount, fee, isNative)
 }
 
 // Deposit is a paid mutator transaction binding the contract method 0x5e3bd9e9.
 //
-// Solidity: function deposit((address,address,address,address,uint256,uint256,bytes32,uint32,uint32,uint32,bytes) p, uint256 bridgeFee, uint256 amount, bool isNative) payable returns()
-func (_AcrossDeposit *AcrossDepositSession) Deposit(p AcrossAcrossParams, bridgeFee *big.Int, amount *big.Int, isNative bool) (*types.Transaction, error) {
-	return _AcrossDeposit.Contract.Deposit(&_AcrossDeposit.TransactOpts, p, bridgeFee, amount, isNative)
+// Solidity: function deposit((address,address,address,address,uint256,uint256,bytes32,uint32,uint32,uint32,bytes) p, uint256 amount, uint256 fee, bool isNative) payable returns()
+func (_AcrossDeposit *AcrossDepositSession) Deposit(p BridgeV1AcrossParams, amount *big.Int, fee *big.Int, isNative bool) (*types.Transaction, error) {
+	return _AcrossDeposit.Contract.Deposit(&_AcrossDeposit.TransactOpts, p, amount, fee, isNative)
 }
 
 // Deposit is a paid mutator transaction binding the contract method 0x5e3bd9e9.
 //
-// Solidity: function deposit((address,address,address,address,uint256,uint256,bytes32,uint32,uint32,uint32,bytes) p, uint256 bridgeFee, uint256 amount, bool isNative) payable returns()
-func (_AcrossDeposit *AcrossDepositTransactorSession) Deposit(p AcrossAcrossParams, bridgeFee *big.Int, amount *big.Int, isNative bool) (*types.Transaction, error) {
-	return _AcrossDeposit.Contract.Deposit(&_AcrossDeposit.TransactOpts, p, bridgeFee, amount, isNative)
+// Solidity: function deposit((address,address,address,address,uint256,uint256,bytes32,uint32,uint32,uint32,bytes) p, uint256 amount, uint256 fee, bool isNative) payable returns()
+func (_AcrossDeposit *AcrossDepositTransactorSession) Deposit(p BridgeV1AcrossParams, amount *big.Int, fee *big.Int, isNative bool) (*types.Transaction, error) {
+	return _AcrossDeposit.Contract.Deposit(&_AcrossDeposit.TransactOpts, p, amount, fee, isNative)
 }
 
-// RescueNative is a paid mutator transaction binding the contract method 0x1291f79d.
+// Pause is a paid mutator transaction binding the contract method 0x8456cb59.
 //
-// Solidity: function rescueNative(address to, uint256 amount) returns()
-func (_AcrossDeposit *AcrossDepositTransactor) RescueNative(opts *bind.TransactOpts, to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _AcrossDeposit.contract.Transact(opts, "rescueNative", to, amount)
+// Solidity: function pause() returns()
+func (_AcrossDeposit *AcrossDepositTransactor) Pause(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _AcrossDeposit.contract.Transact(opts, "pause")
 }
 
-// RescueNative is a paid mutator transaction binding the contract method 0x1291f79d.
+// Pause is a paid mutator transaction binding the contract method 0x8456cb59.
 //
-// Solidity: function rescueNative(address to, uint256 amount) returns()
-func (_AcrossDeposit *AcrossDepositSession) RescueNative(to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _AcrossDeposit.Contract.RescueNative(&_AcrossDeposit.TransactOpts, to, amount)
+// Solidity: function pause() returns()
+func (_AcrossDeposit *AcrossDepositSession) Pause() (*types.Transaction, error) {
+	return _AcrossDeposit.Contract.Pause(&_AcrossDeposit.TransactOpts)
 }
 
-// RescueNative is a paid mutator transaction binding the contract method 0x1291f79d.
+// Pause is a paid mutator transaction binding the contract method 0x8456cb59.
 //
-// Solidity: function rescueNative(address to, uint256 amount) returns()
-func (_AcrossDeposit *AcrossDepositTransactorSession) RescueNative(to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _AcrossDeposit.Contract.RescueNative(&_AcrossDeposit.TransactOpts, to, amount)
+// Solidity: function pause() returns()
+func (_AcrossDeposit *AcrossDepositTransactorSession) Pause() (*types.Transaction, error) {
+	return _AcrossDeposit.Contract.Pause(&_AcrossDeposit.TransactOpts)
 }
 
-// RescueToken is a paid mutator transaction binding the contract method 0xe5711e8b.
+// RescueNative is a paid mutator transaction binding the contract method 0x454aa669.
 //
-// Solidity: function rescueToken(address token, address to, uint256 amount) returns()
-func (_AcrossDeposit *AcrossDepositTransactor) RescueToken(opts *bind.TransactOpts, token common.Address, to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _AcrossDeposit.contract.Transact(opts, "rescueToken", token, to, amount)
+// Solidity: function rescueNative(uint256 amount) returns()
+func (_AcrossDeposit *AcrossDepositTransactor) RescueNative(opts *bind.TransactOpts, amount *big.Int) (*types.Transaction, error) {
+	return _AcrossDeposit.contract.Transact(opts, "rescueNative", amount)
 }
 
-// RescueToken is a paid mutator transaction binding the contract method 0xe5711e8b.
+// RescueNative is a paid mutator transaction binding the contract method 0x454aa669.
 //
-// Solidity: function rescueToken(address token, address to, uint256 amount) returns()
-func (_AcrossDeposit *AcrossDepositSession) RescueToken(token common.Address, to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _AcrossDeposit.Contract.RescueToken(&_AcrossDeposit.TransactOpts, token, to, amount)
+// Solidity: function rescueNative(uint256 amount) returns()
+func (_AcrossDeposit *AcrossDepositSession) RescueNative(amount *big.Int) (*types.Transaction, error) {
+	return _AcrossDeposit.Contract.RescueNative(&_AcrossDeposit.TransactOpts, amount)
 }
 
-// RescueToken is a paid mutator transaction binding the contract method 0xe5711e8b.
+// RescueNative is a paid mutator transaction binding the contract method 0x454aa669.
 //
-// Solidity: function rescueToken(address token, address to, uint256 amount) returns()
-func (_AcrossDeposit *AcrossDepositTransactorSession) RescueToken(token common.Address, to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _AcrossDeposit.Contract.RescueToken(&_AcrossDeposit.TransactOpts, token, to, amount)
+// Solidity: function rescueNative(uint256 amount) returns()
+func (_AcrossDeposit *AcrossDepositTransactorSession) RescueNative(amount *big.Int) (*types.Transaction, error) {
+	return _AcrossDeposit.Contract.RescueNative(&_AcrossDeposit.TransactOpts, amount)
+}
+
+// RescueToken is a paid mutator transaction binding the contract method 0x33f3d628.
+//
+// Solidity: function rescueToken(address token, uint256 amount) returns()
+func (_AcrossDeposit *AcrossDepositTransactor) RescueToken(opts *bind.TransactOpts, token common.Address, amount *big.Int) (*types.Transaction, error) {
+	return _AcrossDeposit.contract.Transact(opts, "rescueToken", token, amount)
+}
+
+// RescueToken is a paid mutator transaction binding the contract method 0x33f3d628.
+//
+// Solidity: function rescueToken(address token, uint256 amount) returns()
+func (_AcrossDeposit *AcrossDepositSession) RescueToken(token common.Address, amount *big.Int) (*types.Transaction, error) {
+	return _AcrossDeposit.Contract.RescueToken(&_AcrossDeposit.TransactOpts, token, amount)
+}
+
+// RescueToken is a paid mutator transaction binding the contract method 0x33f3d628.
+//
+// Solidity: function rescueToken(address token, uint256 amount) returns()
+func (_AcrossDeposit *AcrossDepositTransactorSession) RescueToken(token common.Address, amount *big.Int) (*types.Transaction, error) {
+	return _AcrossDeposit.Contract.RescueToken(&_AcrossDeposit.TransactOpts, token, amount)
+}
+
+// SetFeeCollector is a paid mutator transaction binding the contract method 0xa42dce80.
+//
+// Solidity: function setFeeCollector(address _feeCollector) returns()
+func (_AcrossDeposit *AcrossDepositTransactor) SetFeeCollector(opts *bind.TransactOpts, _feeCollector common.Address) (*types.Transaction, error) {
+	return _AcrossDeposit.contract.Transact(opts, "setFeeCollector", _feeCollector)
+}
+
+// SetFeeCollector is a paid mutator transaction binding the contract method 0xa42dce80.
+//
+// Solidity: function setFeeCollector(address _feeCollector) returns()
+func (_AcrossDeposit *AcrossDepositSession) SetFeeCollector(_feeCollector common.Address) (*types.Transaction, error) {
+	return _AcrossDeposit.Contract.SetFeeCollector(&_AcrossDeposit.TransactOpts, _feeCollector)
+}
+
+// SetFeeCollector is a paid mutator transaction binding the contract method 0xa42dce80.
+//
+// Solidity: function setFeeCollector(address _feeCollector) returns()
+func (_AcrossDeposit *AcrossDepositTransactorSession) SetFeeCollector(_feeCollector common.Address) (*types.Transaction, error) {
+	return _AcrossDeposit.Contract.SetFeeCollector(&_AcrossDeposit.TransactOpts, _feeCollector)
+}
+
+// Unpause is a paid mutator transaction binding the contract method 0x3f4ba83a.
+//
+// Solidity: function unpause() returns()
+func (_AcrossDeposit *AcrossDepositTransactor) Unpause(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _AcrossDeposit.contract.Transact(opts, "unpause")
+}
+
+// Unpause is a paid mutator transaction binding the contract method 0x3f4ba83a.
+//
+// Solidity: function unpause() returns()
+func (_AcrossDeposit *AcrossDepositSession) Unpause() (*types.Transaction, error) {
+	return _AcrossDeposit.Contract.Unpause(&_AcrossDeposit.TransactOpts)
+}
+
+// Unpause is a paid mutator transaction binding the contract method 0x3f4ba83a.
+//
+// Solidity: function unpause() returns()
+func (_AcrossDeposit *AcrossDepositTransactorSession) Unpause() (*types.Transaction, error) {
+	return _AcrossDeposit.Contract.Unpause(&_AcrossDeposit.TransactOpts)
 }
 
 // AcrossDepositDepositExecutedIterator is returned from FilterDepositExecuted and is used to iterate over the raw logs and unpacked data for DepositExecuted events raised by the AcrossDeposit contract.
@@ -643,6 +768,140 @@ func (_AcrossDeposit *AcrossDepositFilterer) ParseNativeRescued(log types.Log) (
 	return event, nil
 }
 
+// AcrossDepositPausedIterator is returned from FilterPaused and is used to iterate over the raw logs and unpacked data for Paused events raised by the AcrossDeposit contract.
+type AcrossDepositPausedIterator struct {
+	Event *AcrossDepositPaused // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *AcrossDepositPausedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(AcrossDepositPaused)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(AcrossDepositPaused)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *AcrossDepositPausedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *AcrossDepositPausedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// AcrossDepositPaused represents a Paused event raised by the AcrossDeposit contract.
+type AcrossDepositPaused struct {
+	Account common.Address
+	Raw     types.Log // Blockchain specific contextual infos
+}
+
+// FilterPaused is a free log retrieval operation binding the contract event 0x62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258.
+//
+// Solidity: event Paused(address account)
+func (_AcrossDeposit *AcrossDepositFilterer) FilterPaused(opts *bind.FilterOpts) (*AcrossDepositPausedIterator, error) {
+
+	logs, sub, err := _AcrossDeposit.contract.FilterLogs(opts, "Paused")
+	if err != nil {
+		return nil, err
+	}
+	return &AcrossDepositPausedIterator{contract: _AcrossDeposit.contract, event: "Paused", logs: logs, sub: sub}, nil
+}
+
+// WatchPaused is a free log subscription operation binding the contract event 0x62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258.
+//
+// Solidity: event Paused(address account)
+func (_AcrossDeposit *AcrossDepositFilterer) WatchPaused(opts *bind.WatchOpts, sink chan<- *AcrossDepositPaused) (event.Subscription, error) {
+
+	logs, sub, err := _AcrossDeposit.contract.WatchLogs(opts, "Paused")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(AcrossDepositPaused)
+				if err := _AcrossDeposit.contract.UnpackLog(event, "Paused", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParsePaused is a log parse operation binding the contract event 0x62e78cea01bee320cd4e420270b5ea74000d11b0c9f74754ebdbfc544b05a258.
+//
+// Solidity: event Paused(address account)
+func (_AcrossDeposit *AcrossDepositFilterer) ParsePaused(log types.Log) (*AcrossDepositPaused, error) {
+	event := new(AcrossDepositPaused)
+	if err := _AcrossDeposit.contract.UnpackLog(event, "Paused", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
 // AcrossDepositTokenRescuedIterator is returned from FilterTokenRescued and is used to iterate over the raw logs and unpacked data for TokenRescued events raised by the AcrossDeposit contract.
 type AcrossDepositTokenRescuedIterator struct {
 	Event *AcrossDepositTokenRescued // Event containing the contract specifics and raw log
@@ -791,6 +1050,274 @@ func (_AcrossDeposit *AcrossDepositFilterer) WatchTokenRescued(opts *bind.WatchO
 func (_AcrossDeposit *AcrossDepositFilterer) ParseTokenRescued(log types.Log) (*AcrossDepositTokenRescued, error) {
 	event := new(AcrossDepositTokenRescued)
 	if err := _AcrossDeposit.contract.UnpackLog(event, "TokenRescued", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// AcrossDepositUnpausedIterator is returned from FilterUnpaused and is used to iterate over the raw logs and unpacked data for Unpaused events raised by the AcrossDeposit contract.
+type AcrossDepositUnpausedIterator struct {
+	Event *AcrossDepositUnpaused // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *AcrossDepositUnpausedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(AcrossDepositUnpaused)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(AcrossDepositUnpaused)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *AcrossDepositUnpausedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *AcrossDepositUnpausedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// AcrossDepositUnpaused represents a Unpaused event raised by the AcrossDeposit contract.
+type AcrossDepositUnpaused struct {
+	Account common.Address
+	Raw     types.Log // Blockchain specific contextual infos
+}
+
+// FilterUnpaused is a free log retrieval operation binding the contract event 0x5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa.
+//
+// Solidity: event Unpaused(address account)
+func (_AcrossDeposit *AcrossDepositFilterer) FilterUnpaused(opts *bind.FilterOpts) (*AcrossDepositUnpausedIterator, error) {
+
+	logs, sub, err := _AcrossDeposit.contract.FilterLogs(opts, "Unpaused")
+	if err != nil {
+		return nil, err
+	}
+	return &AcrossDepositUnpausedIterator{contract: _AcrossDeposit.contract, event: "Unpaused", logs: logs, sub: sub}, nil
+}
+
+// WatchUnpaused is a free log subscription operation binding the contract event 0x5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa.
+//
+// Solidity: event Unpaused(address account)
+func (_AcrossDeposit *AcrossDepositFilterer) WatchUnpaused(opts *bind.WatchOpts, sink chan<- *AcrossDepositUnpaused) (event.Subscription, error) {
+
+	logs, sub, err := _AcrossDeposit.contract.WatchLogs(opts, "Unpaused")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(AcrossDepositUnpaused)
+				if err := _AcrossDeposit.contract.UnpackLog(event, "Unpaused", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseUnpaused is a log parse operation binding the contract event 0x5db9ee0a495bf2e6ff9c91a7834c1ba4fdd244a5e8aa4e537bd38aeae4b073aa.
+//
+// Solidity: event Unpaused(address account)
+func (_AcrossDeposit *AcrossDepositFilterer) ParseUnpaused(log types.Log) (*AcrossDepositUnpaused, error) {
+	event := new(AcrossDepositUnpaused)
+	if err := _AcrossDeposit.contract.UnpackLog(event, "Unpaused", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// AcrossDepositUpdateFeeCollectorIterator is returned from FilterUpdateFeeCollector and is used to iterate over the raw logs and unpacked data for UpdateFeeCollector events raised by the AcrossDeposit contract.
+type AcrossDepositUpdateFeeCollectorIterator struct {
+	Event *AcrossDepositUpdateFeeCollector // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *AcrossDepositUpdateFeeCollectorIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(AcrossDepositUpdateFeeCollector)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(AcrossDepositUpdateFeeCollector)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *AcrossDepositUpdateFeeCollectorIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *AcrossDepositUpdateFeeCollectorIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// AcrossDepositUpdateFeeCollector represents a UpdateFeeCollector event raised by the AcrossDeposit contract.
+type AcrossDepositUpdateFeeCollector struct {
+	FeeCollector common.Address
+	Raw          types.Log // Blockchain specific contextual infos
+}
+
+// FilterUpdateFeeCollector is a free log retrieval operation binding the contract event 0x338e8652f97d92dc615790fbe0fba33e7ce110c00e6e328be604e8119a3b6aa6.
+//
+// Solidity: event UpdateFeeCollector(address _feeCollector)
+func (_AcrossDeposit *AcrossDepositFilterer) FilterUpdateFeeCollector(opts *bind.FilterOpts) (*AcrossDepositUpdateFeeCollectorIterator, error) {
+
+	logs, sub, err := _AcrossDeposit.contract.FilterLogs(opts, "UpdateFeeCollector")
+	if err != nil {
+		return nil, err
+	}
+	return &AcrossDepositUpdateFeeCollectorIterator{contract: _AcrossDeposit.contract, event: "UpdateFeeCollector", logs: logs, sub: sub}, nil
+}
+
+// WatchUpdateFeeCollector is a free log subscription operation binding the contract event 0x338e8652f97d92dc615790fbe0fba33e7ce110c00e6e328be604e8119a3b6aa6.
+//
+// Solidity: event UpdateFeeCollector(address _feeCollector)
+func (_AcrossDeposit *AcrossDepositFilterer) WatchUpdateFeeCollector(opts *bind.WatchOpts, sink chan<- *AcrossDepositUpdateFeeCollector) (event.Subscription, error) {
+
+	logs, sub, err := _AcrossDeposit.contract.WatchLogs(opts, "UpdateFeeCollector")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(AcrossDepositUpdateFeeCollector)
+				if err := _AcrossDeposit.contract.UnpackLog(event, "UpdateFeeCollector", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseUpdateFeeCollector is a log parse operation binding the contract event 0x338e8652f97d92dc615790fbe0fba33e7ce110c00e6e328be604e8119a3b6aa6.
+//
+// Solidity: event UpdateFeeCollector(address _feeCollector)
+func (_AcrossDeposit *AcrossDepositFilterer) ParseUpdateFeeCollector(log types.Log) (*AcrossDepositUpdateFeeCollector, error) {
+	event := new(AcrossDepositUpdateFeeCollector)
+	if err := _AcrossDeposit.contract.UnpackLog(event, "UpdateFeeCollector", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
