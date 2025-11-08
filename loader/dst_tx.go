@@ -92,3 +92,24 @@ func (mgr *DstTxManager) Save(tx *DstTx) error {
 	return nil
 
 }
+
+func (mgr *DstTxManager) SaveAcrossDstTx(tx *DstTx) error {
+	tx.SrcAction = strings.TrimSpace(tx.SrcAction)
+	tx.Body = strings.TrimSpace(tx.Body)
+	tx.FeeCap.String = strings.TrimSpace(tx.FeeCap.String)
+	tx.TransferToken.String = strings.TrimSpace(tx.TransferToken.String)
+	tx.TransferRecipient.String = strings.TrimSpace(tx.TransferRecipient.String)
+	tx.TransferAmount.String = strings.TrimSpace(tx.TransferAmount.String)
+
+	query := `INSERT IGNORE INTO t_dst_transaction (src_action, src_id, src_version, sender, body, confirmed_gen, fee_cap, transfer_token, transfer_recipient, transfer_amount)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ? , ?, ?)`
+
+	// Execute the SQL statement with tx data
+	_, err := mgr.db.Exec(query, tx.SrcAction, tx.SrcId, tx.SrcVersion, tx.Sender, tx.Body, 1, tx.FeeCap, tx.TransferToken, tx.TransferRecipient, tx.TransferAmount)
+	if err != nil {
+		mgr.alerter.AlertText("failed to insert dst transaction", err)
+		return err
+	}
+	return nil
+
+}
