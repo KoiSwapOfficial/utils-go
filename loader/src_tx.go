@@ -26,7 +26,7 @@ type SrcTx struct {
 	ToExchange        int32
 	IsAcross          int32
 	AcrossStatus      string
-	AcrossDepositId   int64
+	AcrossTxData      string
 }
 
 type SrcTxManager struct {
